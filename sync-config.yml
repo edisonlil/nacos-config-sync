@@ -1,0 +1,19 @@
+sync-config:
+  config-addr: /tmp
+  naocs:
+    addr: http://10.24.61.17:21000
+    url: http://10.24.61.17:21000/nacos
+    group: dev
+    namespace: nacos-test
+    file-extension: yml
+    loginUrl: http://10.24.61.17:21000/nacos/v1/auth/users/login
+    configUrl: http://10.24.61.17:21000/nacos/v1/cs/configs
+    username: nacos
+    password: nacos
+  gitlab:
+    branch: dev
+  envs: "
+   baseUrl: lotus-ehr-organization.ehr-test
+
+
+    "

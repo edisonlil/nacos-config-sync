@@ -1,0 +1,1 @@
+# gitlab同步到nacos
