@@ -54,7 +54,7 @@ func startUploadConfig(configDir string)  {
 		}
 
 		//上传配置文件到naocsConfig
-		uploadConfig(loginResult["accessToken"].(string), NaocsConfigInfo{
+		go uploadConfig(loginResult["accessToken"].(string), NaocsConfigInfo{
 			FileName: fileName,
 			Content: string(bytes),
 		})
