@@ -2,7 +2,7 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
+	log "github.com/sirupsen/logrus"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -19,13 +19,13 @@ type NaocsConfigInfo struct {
 
 func main() {
 
-	fmt.Println("开始同步配置文件...")
+	log.Infoln("开始同步配置文件...")
 
 	InitConfig()
 
 	startUploadConfig(config.GetString("sync-config.config-addr"))
 
-	fmt.Println("同步配置文件完成...")
+	log.Infoln("同步配置文件完成...")
 }
 
 func startUploadConfig(configDir string) {
@@ -35,7 +35,7 @@ func startUploadConfig(configDir string) {
 	files, err := GetAllFiles(configDir)
 
 	if err != nil {
-		fmt.Errorf("error : %s", err)
+		log.Errorf("error : %s", err)
 		return
 	}
 
@@ -51,7 +51,7 @@ func startUploadConfig(configDir string) {
 		bytes, err := ioutil.ReadFile(files[i])
 
 		if err != nil {
-			fmt.Errorf("error : %s", err)
+			log.Errorf("error : %s", err)
 			return
 		}
 
@@ -65,7 +65,7 @@ func startUploadConfig(configDir string) {
 
 		wgr.Done()
 
-		fmt.Println(files[i])
+		log.Infoln(files[i])
 	}
 
 	wgr.Wait()
@@ -89,7 +89,7 @@ func uploadConfig(accessToken string, configInfo NaocsConfigInfo) {
 	req, err := http.NewRequest("POST", naocsSaveConfigUrl, reqBody)
 
 	if err != nil {
-		fmt.Println("error：" + err.Error())
+		log.Errorf("error：%s", err.Error())
 	}
 
 	req.Header.Add("Accept", "application/json, text/plain, */*")
@@ -105,7 +105,7 @@ func uploadConfig(accessToken string, configInfo NaocsConfigInfo) {
 	resp, err := client.Do(req)
 
 	if err != nil {
-		fmt.Println("error：" + err.Error())
+		log.Infoln("error：" + err.Error())
 	}
 
 	defer resp.Body.Close()
@@ -113,10 +113,10 @@ func uploadConfig(accessToken string, configInfo NaocsConfigInfo) {
 	respBody, err := ioutil.ReadAll(resp.Body)
 
 	if err != nil {
-		fmt.Println("error:", err)
+		log.Errorf("error: %s", err)
 	}
 
-	fmt.Println(string(respBody))
+	log.Infoln(string(respBody))
 }
 
 func naocsLogin() (map[string]interface{}, error) {
@@ -146,7 +146,7 @@ func naocsLogin() (map[string]interface{}, error) {
 	resp, err := client.Do(req)
 
 	if err != nil {
-		fmt.Println("登录nacos失败,", err.Error())
+		log.Errorf("登录nacos失败,%s", err.Error())
 	}
 
 	defer resp.Body.Close()
@@ -154,14 +154,14 @@ func naocsLogin() (map[string]interface{}, error) {
 	respBody, err := ioutil.ReadAll(resp.Body)
 
 	if err != nil {
-		fmt.Println("error", err)
+		log.Errorf("%s", err.Error())
 	}
 
 	var result map[string]interface{}
 
 	err = json.Unmarshal([]byte(respBody), &result)
 
-	fmt.Println(string(respBody))
+	log.Infoln(string(respBody))
 
 	return result, nil
 }
