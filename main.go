@@ -8,17 +8,16 @@ import (
 	"net/url"
 	"os"
 	"strings"
+	"sync"
 )
 
 type NaocsConfigInfo struct {
-
 	FileName string
 
 	Content string
-
 }
 
-func main()  {
+func main() {
 
 	fmt.Println("开始同步配置文件...")
 
@@ -27,10 +26,9 @@ func main()  {
 	startUploadConfig(config.GetString("sync-config.config-addr"))
 }
 
-func startUploadConfig(configDir string)  {
+func startUploadConfig(configDir string) {
 
-
-	loginResult,_ := naocsLogin()
+	loginResult, _ := naocsLogin()
 
 	files, err := GetAllFiles(configDir)
 
@@ -38,6 +36,8 @@ func startUploadConfig(configDir string)  {
 		fmt.Errorf("error : %s", err)
 		return
 	}
+
+	var wgr sync.WaitGroup
 
 	for i := range files {
 
@@ -53,18 +53,24 @@ func startUploadConfig(configDir string)  {
 			return
 		}
 
+		wgr.Add(1)
+
 		//上传配置文件到naocsConfig
 		go uploadConfig(loginResult["accessToken"].(string), NaocsConfigInfo{
 			FileName: fileName,
-			Content: string(bytes),
+			Content:  string(bytes),
 		})
+
+		wgr.Done()
 
 		fmt.Println(files[i])
 	}
+
+	wgr.Wait()
 }
 
-func uploadConfig(accessToken string,configInfo NaocsConfigInfo)  {
-	naocsSaveConfigUrl := config.GetString("sync-config.naocs.configUrl")+"?accessToken="+ accessToken
+func uploadConfig(accessToken string, configInfo NaocsConfigInfo) {
+	naocsSaveConfigUrl := config.GetString("sync-config.naocs.configUrl") + "?accessToken=" + accessToken
 	naocsUrl := config.GetString("sync-config.naocs.url")
 	naocsAddr := config.GetString("sync-config.naocs.addr")
 	client := &http.Client{}
@@ -74,7 +80,7 @@ func uploadConfig(accessToken string,configInfo NaocsConfigInfo)  {
 	values.Set("group", config.GetString("sync-config.naocs.group"))
 	values.Set("content", configInfo.Content)
 	values.Set("tenant", config.GetString("sync-config.naocs.namespace"))
-	values.Set("type",  config.GetString("sync-config.naocs.file-extension"))
+	values.Set("type", config.GetString("sync-config.naocs.file-extension"))
 
 	reqBody := ioutil.NopCloser(strings.NewReader(values.Encode()))
 
@@ -111,24 +117,23 @@ func uploadConfig(accessToken string,configInfo NaocsConfigInfo)  {
 	fmt.Println(string(respBody))
 }
 
-func naocsLogin () (map[string]interface{},error){
+func naocsLogin() (map[string]interface{}, error) {
 
 	values := url.Values{}
-	values.Set("username",config.GetString("sync-config.naocs.username"))
-	values.Set("password",config.GetString("sync-config.naocs.password"))
+	values.Set("username", config.GetString("sync-config.naocs.username"))
+	values.Set("password", config.GetString("sync-config.naocs.password"))
 
 	reqBody := ioutil.NopCloser(strings.NewReader(values.Encode()))
 
 	client := &http.Client{}
 
-
 	loginUrl := config.GetString("sync-config.naocs.loginUrl")
 	naocsUrl := config.GetString("sync-config.naocs.url")
 	naocsAddr := config.GetString("sync-config.naocs.addr")
-	req,err := http.NewRequest("POST",loginUrl,reqBody)
+	req, err := http.NewRequest("POST", loginUrl, reqBody)
 
-	req.Header.Add("Accept","application/json,text/plain,*/*")
-	req.Header.Add("Accept-Encoding","gzip,deflate")
+	req.Header.Add("Accept", "application/json,text/plain,*/*")
+	req.Header.Add("Accept-Encoding", "gzip,deflate")
 	req.Header.Add("Accept-Language", "zh-CN,zh;q=0.9")
 	req.Header.Add("Connection", "keep-alive")
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
@@ -136,24 +141,27 @@ func naocsLogin () (map[string]interface{},error){
 	req.Header.Add("Referer", naocsAddr)
 	req.Header.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.104 Safari/537.36")
 
-	resp,err := client.Do(req)
+	resp, err := client.Do(req)
 
+	if err != nil {
+		fmt.Println("登录nacos失败,", err.Error())
+	}
 
 	defer resp.Body.Close()
 
-	respBody,err := ioutil.ReadAll(resp.Body)
+	respBody, err := ioutil.ReadAll(resp.Body)
 
 	if err != nil {
-		fmt.Println("error",err)
+		fmt.Println("error", err)
 	}
 
 	var result map[string]interface{}
 
-	err = json.Unmarshal([]byte(respBody),&result)
+	err = json.Unmarshal([]byte(respBody), &result)
 
 	fmt.Println(string(respBody))
 
-	return result,nil
+	return result, nil
 }
 
 //GetAllFiles 获取指定目录下的所有文件,包含子目录下的文件
@@ -191,17 +199,17 @@ func GetAllFiles(dirPth string) (files []string, err error) {
 	return files, nil
 }
 
-func GetFileName(file string) string  {
+func GetFileName(file string) string {
 
 	var separator string
 
-	if strings.Contains(file,"\\") {
+	if strings.Contains(file, "\\") {
 		separator = "\\"
-	}else {
+	} else {
 		separator = "/"
 	}
 
-	splits := strings.Split(file,separator)
+	splits := strings.Split(file, separator)
 
 	return splits[len(splits)-1]
 
