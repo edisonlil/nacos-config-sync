@@ -24,6 +24,8 @@ func main() {
 	InitConfig()
 
 	startUploadConfig(config.GetString("sync-config.config-addr"))
+
+	fmt.Println("同步配置文件完成...")
 }
 
 func startUploadConfig(configDir string) {
