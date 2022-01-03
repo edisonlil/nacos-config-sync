@@ -11,7 +11,7 @@ import (
 	"sync"
 )
 
-type NaocsConfigInfo struct {
+type NaocsContentInfo struct {
 	FileName string
 
 	Content string
@@ -58,7 +58,7 @@ func startUploadConfig(configDir string) {
 		wgr.Add(1)
 
 		//上传配置文件到naocsConfig
-		go uploadConfig(loginResult["accessToken"].(string), NaocsConfigInfo{
+		go uploadConfig(loginResult["accessToken"].(string), NaocsContentInfo{
 			FileName: fileName,
 			Content:  string(bytes),
 		})
@@ -71,18 +71,19 @@ func startUploadConfig(configDir string) {
 	wgr.Wait()
 }
 
-func uploadConfig(accessToken string, configInfo NaocsConfigInfo) {
-	naocsSaveConfigUrl := config.GetString("sync-config.naocs.configUrl") + "?accessToken=" + accessToken
-	naocsUrl := config.GetString("sync-config.naocs.url")
-	naocsAddr := config.GetString("sync-config.naocs.addr")
+func uploadConfig(accessToken string, info NaocsContentInfo) {
+
+	nacosConfig := GetNacosConfig()
+
+	naocsSaveConfigUrl := nacosConfig.ConfigUrl + "?accessToken=" + accessToken
 	client := &http.Client{}
 
 	values := url.Values{}
-	values.Set("dataId", configInfo.FileName)
-	values.Set("group", config.GetString("sync-config.naocs.group"))
-	values.Set("content", configInfo.Content)
-	values.Set("tenant", config.GetString("sync-config.naocs.namespace"))
-	values.Set("type", config.GetString("sync-config.naocs.file-extension"))
+	values.Set("dataId", info.FileName)
+	values.Set("group", nacosConfig.Group)
+	values.Set("content", info.Content)
+	values.Set("tenant", nacosConfig.Namespace)
+	values.Set("type", nacosConfig.FileExtension)
 
 	reqBody := ioutil.NopCloser(strings.NewReader(values.Encode()))
 
@@ -97,8 +98,8 @@ func uploadConfig(accessToken string, configInfo NaocsConfigInfo) {
 	req.Header.Add("Accept-Language", "zh-CN,zh;q=0.9")
 	req.Header.Add("Connection", "keep-alive")
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-	req.Header.Add("Origin", naocsUrl)
-	req.Header.Add("Referer", naocsAddr)
+	req.Header.Add("Origin", nacosConfig.Url)
+	req.Header.Add("Referer", nacosConfig.Addr)
 	req.Header.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.104 Safari/537.36")
 	req.Header.Add("accessToken", accessToken)
 
@@ -121,26 +122,25 @@ func uploadConfig(accessToken string, configInfo NaocsConfigInfo) {
 
 func naocsLogin() (map[string]interface{}, error) {
 
+	nacosConfig := GetNacosConfig()
+
 	values := url.Values{}
-	values.Set("username", config.GetString("sync-config.naocs.username"))
-	values.Set("password", config.GetString("sync-config.naocs.password"))
+	values.Set("username", nacosConfig.Username)
+	values.Set("password", nacosConfig.Password)
 
 	reqBody := ioutil.NopCloser(strings.NewReader(values.Encode()))
 
 	client := &http.Client{}
 
-	loginUrl := config.GetString("sync-config.naocs.loginUrl")
-	naocsUrl := config.GetString("sync-config.naocs.url")
-	naocsAddr := config.GetString("sync-config.naocs.addr")
-	req, err := http.NewRequest("POST", loginUrl, reqBody)
+	req, err := http.NewRequest("POST", nacosConfig.LoginUrl, reqBody)
 
 	req.Header.Add("Accept", "application/json,text/plain,*/*")
 	req.Header.Add("Accept-Encoding", "gzip,deflate")
 	req.Header.Add("Accept-Language", "zh-CN,zh;q=0.9")
 	req.Header.Add("Connection", "keep-alive")
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-	req.Header.Add("Origin", naocsUrl)
-	req.Header.Add("Referer", naocsAddr)
+	req.Header.Add("Origin", nacosConfig.Url)
+	req.Header.Add("Referer", nacosConfig.Addr)
 	req.Header.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.104 Safari/537.36")
 
 	resp, err := client.Do(req)
