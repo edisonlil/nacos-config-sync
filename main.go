@@ -21,9 +21,7 @@ func main() {
 
 	log.Infoln("开始同步配置文件...")
 
-	InitConfig()
-
-	startUploadConfig(config.GetString("sync-config.config-addr"))
+	startUploadConfig(env.GetString("sync-config.config-addr"))
 
 	log.Infoln("同步配置文件完成...")
 }
@@ -73,7 +71,7 @@ func startUploadConfig(configDir string) {
 
 func uploadConfig(accessToken string, info NaocsContentInfo) {
 
-	nacosConfig := GetNacosConfig()
+	nacosConfig := env.GetNacosConfig()
 
 	naocsSaveConfigUrl := nacosConfig.ConfigUrl + "?accessToken=" + accessToken
 	client := &http.Client{}
@@ -122,7 +120,7 @@ func uploadConfig(accessToken string, info NaocsContentInfo) {
 
 func naocsLogin() (map[string]interface{}, error) {
 
-	nacosConfig := GetNacosConfig()
+	nacosConfig := env.GetNacosConfig()
 
 	values := url.Values{}
 	values.Set("username", nacosConfig.Username)

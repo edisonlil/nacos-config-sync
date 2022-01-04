@@ -1,3 +1,4 @@
+nacos_username: edc
 sync-config:
   config-addr: /tmp
   naocs:
@@ -8,12 +9,9 @@ sync-config:
     file-extension: yml
     loginUrl: http://127.0.0.1:8081/nacos/v1/auth/users/login
     configUrl: http://127.0.0.1:8081/nacos/v1/cs/configs
-    username: nacos
-    password: nacos
+    username: ${nacos_username}
+    password: ${nacos_password}
   gitlab:
     branch: dev
-  envs: "
-   baseUrl: 127.0.0.1:8081
-
-
-    "
+  env:
+    baseUrl: http

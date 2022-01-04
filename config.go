@@ -3,14 +3,19 @@ package main
 import (
 	"github.com/spf13/viper"
 	"os"
+	"regexp"
 	"strings"
 )
 
-var config *viper.Viper
+type Environment struct {
+	Config *viper.Viper
+}
 
-func InitConfig() {
+var env *Environment
 
-	config = viper.GetViper()
+func init() {
+
+	config := viper.GetViper()
 	config.SetConfigName("sync-config")
 	config.SetConfigType("yml")
 
@@ -24,13 +29,31 @@ func InitConfig() {
 
 	config.AddConfigPath(configDir)
 	config.ReadInConfig()
+
+	env = &Environment{
+		Config: config,
+	}
+
+	env.bindEnvs()
 }
 
-func GetConfigEnv() *viper.Viper {
-	envConfig := &viper.Viper{}
-	envConfig.SetConfigType("yml")
-	envConfig.ReadConfig(strings.NewReader(config.GetString("sync-config.env")))
-	return envConfig
+func (env *Environment) GetString(key string) string {
+	return env.resolvePlaceholders(env.Config.GetString(key))
+}
+
+func (env *Environment) bindEnvs() {
+
+	env.Config.BindEnv("NACOS_USERNAME")
+	env.Config.BindEnv("NACOS_PASSWORD")
+}
+
+func (env *Environment) resolvePlaceholders(val string) string {
+
+	//Match %\w*% 匹配%{任意字符或数字或下划线组成的单词}%
+	if ok, _ := regexp.Match("\\$\\{\\w*}", []byte(val)); !ok {
+		return val
+	}
+	return env.Config.GetString(strings.ReplaceAll(strings.ReplaceAll(val, "${", ""), "}", ""))
 }
 
 type NacosConfig struct {
@@ -45,16 +68,16 @@ type NacosConfig struct {
 	Password      string
 }
 
-func GetNacosConfig() NacosConfig {
+func (env *Environment) GetNacosConfig() NacosConfig {
 	return NacosConfig{
-		Addr:          config.GetString("sync-config.nacos.addr"),
-		Url:           config.GetString("sync-config.nacos.url"),
-		Group:         config.GetString("sync-config.nacos.group"),
-		Namespace:     config.GetString("sync-config.nacos.namespace"),
-		FileExtension: config.GetString("sync-config.nacos.file-extension"),
-		LoginUrl:      config.GetString("sync-config.nacos.loginUrl"),
-		ConfigUrl:     config.GetString("sync-config.nacos.configUrl"),
-		Username:      config.GetString("sync-config.nacos.username"),
-		Password:      config.GetString("sync-config.nacos.password"),
+		Addr:          env.GetString("sync-config.nacos.addr"),
+		Url:           env.GetString("sync-config.nacos.url"),
+		Group:         env.GetString("sync-config.nacos.group"),
+		Namespace:     env.GetString("sync-config.nacos.namespace"),
+		FileExtension: env.GetString("sync-config.nacos.file-extension"),
+		LoginUrl:      env.GetString("sync-config.nacos.loginUrl"),
+		ConfigUrl:     env.GetString("sync-config.nacos.configUrl"),
+		Username:      env.GetString("sync-config.nacos.username"),
+		Password:      env.GetString("sync-config.nacos.password"),
 	}
 }
