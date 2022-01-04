@@ -21,8 +21,8 @@ func init() {
 
 	var configDir string
 
-	if len(os.Args) == 3 && os.Args[1] == "-c" {
-		configDir = os.Args[2]
+	if config.BindEnv("config_addr") == nil {
+		configDir = config.GetString("config_addr")
 	} else {
 		configDir, _ = os.Getwd()
 	}
@@ -42,9 +42,9 @@ func (env *Environment) GetString(key string) string {
 }
 
 func (env *Environment) bindEnvs() {
-
-	env.Config.BindEnv("NACOS_USERNAME")
-	env.Config.BindEnv("NACOS_PASSWORD")
+	env.Config.BindEnv("nacos_username")
+	env.Config.BindEnv("nacos_password")
+	env.Config.BindEnv("project_addr")
 }
 
 func (env *Environment) resolvePlaceholders(val string) string {

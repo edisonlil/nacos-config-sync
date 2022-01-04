@@ -20,21 +20,30 @@ type NaocsContentInfo struct {
 func main() {
 
 	log.Infoln("开始同步配置文件...")
+	log.Infoln("配置文件地址：", env.GetString("project_addr"))
+	err := startUploadConfig(env.GetString("project_addr"))
 
-	startUploadConfig(env.GetString("sync-config.config-addr"))
+	if err != nil {
+		log.Errorf("同步配置文件失败...")
+	} else {
+		log.Infoln("同步配置文件完成...")
+	}
 
-	log.Infoln("同步配置文件完成...")
 }
 
-func startUploadConfig(configDir string) {
+func startUploadConfig(configDir string) error {
 
-	loginResult, _ := naocsLogin()
+	loginResult, err := naocsLogin()
+
+	if err != nil {
+		return err
+	}
 
 	files, err := GetAllFiles(configDir)
 
 	if err != nil {
 		log.Errorf("error : %s", err)
-		return
+		return err
 	}
 
 	var wgr sync.WaitGroup
@@ -43,14 +52,15 @@ func startUploadConfig(configDir string) {
 
 		var fileName = GetFileName(files[i])
 
-		if fileName == ".gitlab-ci.yml" {
+		if fileName == ".gitlab-ci.yml" || fileName == "sync-config.yml" {
 			continue
 		}
+
 		bytes, err := ioutil.ReadFile(files[i])
 
 		if err != nil {
 			log.Errorf("error : %s", err)
-			return
+			return err
 		}
 
 		wgr.Add(1)
@@ -67,6 +77,8 @@ func startUploadConfig(configDir string) {
 	}
 
 	wgr.Wait()
+
+	return nil
 }
 
 func uploadConfig(accessToken string, info NaocsContentInfo) {
@@ -145,6 +157,7 @@ func naocsLogin() (map[string]interface{}, error) {
 
 	if err != nil {
 		log.Errorf("登录nacos失败,%s", err.Error())
+		return nil, err
 	}
 
 	defer resp.Body.Close()
