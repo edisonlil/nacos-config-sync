@@ -1,4 +1,5 @@
 nacos_username: edc
+nacos_password: edc
 sync-config:
   config-addr: /tmp
   naocs:
