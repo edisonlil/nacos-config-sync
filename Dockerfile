@@ -6,7 +6,7 @@ ENV GO111MODULE=on \
     GOPROXY=https://goproxy.cn,direct \
     GIN_MODE=release \
     project_addr=/opt/config \
-    config_addr=/opt/config
+    config_addr=/opt/config \
     nacos_username=nacos \
     nacos_password=nacos
 
