@@ -65,13 +65,14 @@ func startUploadConfig(configDir string) error {
 
 		wgr.Add(1)
 
-		//上传配置文件到naocsConfig
-		go uploadConfig(loginResult["accessToken"].(string), NaocsContentInfo{
-			FileName: fileName,
-			Content:  string(bytes),
-		})
+		go func() {
+			uploadConfig(loginResult["accessToken"].(string), NaocsContentInfo{
+				FileName: fileName,
+				Content:  string(bytes),
+			})
 
-		wgr.Done()
+			wgr.Done()
+		}()
 
 		log.Infoln(files[i])
 	}
@@ -128,6 +129,7 @@ func uploadConfig(accessToken string, info NaocsContentInfo) {
 	}
 
 	log.Infoln(string(respBody))
+
 }
 
 func naocsLogin() (map[string]interface{}, error) {
